@@ -1,0 +1,13 @@
+RIFF
+Filesize = 320204 bytes
+WAVE
+fmt 
+Lenght of format data = 20
+Type of format is PCM
+Number of channels = 1
+Sample rate = 16000
+Byte rate = 32000
+Block allign = 2
+Bits per sample = 16
+00-1-1
+Size of data section = 24932
