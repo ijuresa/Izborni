@@ -43,8 +43,8 @@ int main(int argc, char *argv[])
 	float float_duration;
 	float buffer1, buffer2, buffer;
 	char buffer3[5];
-	//int sample_rate, number_of_frames;
-	 
+	int sample_rate, number_of_frames;
+	
 	SF_INFO info;
 	SNDFILE *sf;
 	/* When executing we need to put .lab file as argument */
@@ -71,6 +71,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
+	number_of_frames = info.frames;
+    sample_rate = info.samplerate;
+    
 	/* Creating pointer to our structure */
 	header *header_one_used;
 	
@@ -118,11 +121,11 @@ int main(int argc, char *argv[])
 		fprintf(outfile, "\nSize of data section = %d\n", header_one_used->size_chunk_header);
 	}
 	
+	/* Other way of calculating duration */
+	float_duration = (float)number_of_frames/sample_rate;
+	
 	/* Calculating duration of .wav file */
 	float_duration = (float)header_one_used->file_size/header_one_used->byte_rate;
-	
-	/* Other way of calculating duration */
-	//float_duration = (float)number_of_frames/sample_rate;
 	
 	/* Duration in seconds */
 	printf("%f\n", float_duration);
@@ -152,26 +155,28 @@ int main(int argc, char *argv[])
 			/* Then probably with function sf_count_t sf_readf_int we can read wanted frames */
 			
 			/* Calculating frames needed to be read with each sound. +1 used because of rounding with float */
-			int numFrames = buffer * header_one_used->sample_rate + 1;
+			int numFrames = buffer * sample_rate;
 			
-			/* Allocation of space for each frame. Maybe will change depending on execution speed */
+			/* Allocation of space for each frame */
 			int *spaceFrame = (int *) malloc(numFrames * sizeof(int));
 			if(spaceFrame == NULL)
 			{
 				printf("Allocation of space failed\n");
 			}
+			
 			/* I am reading frames. Could also read items because on 1 CHANNEL file frames=items */
 			int data[numFrames];
 			
 			/* Reading data */
-			sf_count_t frames_read = sf_read_int(sf, data, numFrames);
+			sf_count_t frames_read = sf_readf_int(sf, data, numFrames);
 			/* Macro to check if my condition is true. If not program is terminated */
 			assert(frames_read == numFrames);
+		
 			
 			char string[50];
-			sprintf(string, "%d.wav", state);
-			
-			/* Opening file in which we will write. NEED TO FIGURE OUT HOW TO WRITE IN .WAV */
+			sprintf(string, "%d.raw", state);
+
+			/* Opening file in which we will write */
 			SNDFILE *sndFile = sf_open(string, SFM_WRITE, &info);
 			if(sndFile == NULL)
 			{
@@ -179,10 +184,21 @@ int main(int argc, char *argv[])
 				free(spaceFrame);
 				return -1;
 			}
-			state++;
 			
+			int writtenFrames = sf_writef_int(sndFile, spaceFrame, frames_read);
+			assert(writtenFrames == numFrames);
+			//sf_count_t frames_written = sf_writef_int(sndFile, spaceFrame, numFrames);
+			/*if(writtenFrames != numFrames)
+			{
+				printf("Can't write enough frames for the source\n");
+				sf_close(sndFile);
+				free(spaceFrame);
+				return -1;
+			}
+			*/
+			
+			state++;
 		}	
-		
 	}
 	
 	fclose(infile_lab);
