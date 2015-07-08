@@ -174,9 +174,15 @@ int main(int argc, char *argv[])
 		
 			
 			char string[50];
+<<<<<<< HEAD
 			sprintf(string, "%d.raw", state);
 
 			/* Opening file in which we will write */
+=======
+			sprintf(string, "%d.wav", state);
+			
+			/* Opening file in which we will write. */
+>>>>>>> 4012c828157768636e598c059ae2331959f76368
 			SNDFILE *sndFile = sf_open(string, SFM_WRITE, &info);
 			if(sndFile == NULL)
 			{
