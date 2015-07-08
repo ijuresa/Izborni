@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 			char string[50];
 			sprintf(string, "%d.wav", state);
 			
-			/* Opening file in which we will write. NEED TO FIGURE OUT HOW TO WRITE IN .WAV */
+			/* Opening file in which we will write. */
 			SNDFILE *sndFile = sf_open(string, SFM_WRITE, &info);
 			if(sndFile == NULL)
 			{
