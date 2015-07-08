@@ -2,7 +2,7 @@
  * Name:		libsndfile_wav_check.c	
  * Description:	Reading file from .wav file using libsndfile library.
  * Input:		Building: 			gcc -w -o wav_check libsndfile_wav_check.c -lsndfile
- * 				Starting program: 	./wav_check
+ * 				Starting program: 	./wav_check [argument -> .wav]
  * Outoput:		Number of frames, samplerate, number of channels, number of items (channels * frames)
  * Misc:		Creates output_collection.out which contains the data from .wav file
  **********************************************************/
@@ -12,8 +12,15 @@
 #include <stdlib.h>
 #include <sndfile.h>
 
-int main()
+int main(int argc, char *argv[])
 {
+	/* When executing we need to put .wav file as argument */
+	if(argc != 2)
+	{
+		printf("Put .wav file as argument!\n");
+		return 1;
+	}
+	
 	 /* SNDFILE is very much like a FILE in the Standard C library */
     SNDFILE *sf;
     
@@ -35,7 +42,7 @@ int main()
     
     /* Opening the .wav file */
     info.format = 0;
-    sf = sf_open("sm04010103101.wav", SFM_READ, &info);
+    sf = sf_open(argv[1], SFM_READ, &info);
     
     if (sf == NULL)
     {
