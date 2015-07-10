@@ -1,10 +1,10 @@
 /**********************************************************
  * Name:		cropping_nd_header.c	
  * Description:	Reading header and saving it to output_header.txt
- * 				
- * Input:		Compiling: gcc -w -o cropp cropping_nd_header.c -lsndfile
-				Running:   ./cropp sm04010103101.lab sm04010103101.wav
- * Outoput:		Creates output_header.txt
+ * 				Creating new .raw files depending on .lab times
+ * Input:		Compiling: gcc -w -o zadatak1_3 cropping_nd_header.c -lsndfile
+				Running:   ./zadatak1_3 sm04010103101.lab sm04010103101.wav
+ * Outoput:		Creates output_header.txt and x.raw for every sound 
  * Misc:		-
  **********************************************************/
 
@@ -29,7 +29,7 @@ typedef struct header_info
 	
 }header;
 
-
+/* Includes */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,49 +38,52 @@ typedef struct header_info
 
 int main(int argc, char *argv[])
 {
-	int state = 0;
-	int i, integer_duration, counter = 0;
+	int i, integer_duration, state = 0;
 	float float_duration;
+	/* Buffers for storing times from .lab file */
 	float buffer1, buffer2, buffer;
+	/* Buffer for storing character from .lab file */
 	char buffer3[5];
+	
+	/* Variables for SF_INFO structure */
 	int sample_rate, number_of_frames;
 	
 	SF_INFO info;
 	SNDFILE *sf;
-	/* When executing we need to put .lab file as argument */
+	/* When executing we need to put .lab as 1st and .wav file as 2nd argument */
 	if(argc != 3)
 	{
 		printf("Put .lab file as 1st argument and .wav file as 2nd argument!\n");
 		return 1;
 	}
 	
-	/* Open files in read mode */
+	/* Open .lab file in read mode */
 	FILE *infile_lab = fopen(argv[1], "rb");
 	
-	/* Couldn't solve this different. It's the same argument but used different */
+	/* Couldn't solve this different. It's the same argument but used differently */
 	FILE *infile_wav = fopen(argv[2], "rb");
 	sf = sf_open(argv[2], SFM_READ, &info);
 	
-	/* Create outputs in write mode */
+	/* Create output_header.txt file for storing header variables in write mode */
 	FILE *outfile = fopen("output_header.txt","wb");
 	
-	/* In case files can't be opened */
+	/* In case any of the files can't be opened */
 	if((!infile_lab) || (!sf) || (!outfile))
 	{
 		printf("Error opening files!!!\n");
 		return 1;
 	}
-	
+	/* Pulling information about header of .wav file from SF_INFO structure*/
 	number_of_frames = info.frames;
     sample_rate = info.samplerate;
     
 	/* Creating pointer to our structure */
 	header *header_one_used;
 	
-	/* Allocation of space */
+	/* Allocation of space for header */
 	header_one_used = (header *) malloc(sizeof(header));
 	
-	if(infile_lab !=NULL)
+	if(sf !=NULL)
 	{
 		/* Reads data from infile (.wav file) to array pointed by header_one_used */
 		fread(header_one_used, 1, sizeof(header), infile_wav);
@@ -120,12 +123,12 @@ int main(int argc, char *argv[])
 		
 		fprintf(outfile, "\nSize of data section = %d\n", header_one_used->size_chunk_header);
 	}
-	
-	/* Other way of calculating duration */
-	float_duration = (float)number_of_frames/sample_rate;
-	
+
 	/* Calculating duration of .wav file */
 	float_duration = (float)header_one_used->file_size/header_one_used->byte_rate;
+	
+	/* Other way of calculating duration */
+	//float_duration = (float)number_of_frames/sample_rate;
 	
 	/* Duration in seconds */
 	printf("%f\n", float_duration);
@@ -133,20 +136,20 @@ int main(int argc, char *argv[])
 	/* Duration in microseconds */
 	integer_duration = float_duration * 1000000;
 	printf("%d\n", integer_duration);
-		
+	
+	/* Reading line by line from our .lab file until it's EOF*/	
 	while(fscanf(infile_lab, "%f %f %s", &buffer1, &buffer2, buffer3) != EOF)
 	{	
-		/* Converting to seconds */
+		/* Converting to seconds -> Because times in .lab file are in microseconds */
 		buffer1 = (float)buffer1/10000000;
 		buffer2 = (float)buffer2/10000000;
 		
-		/* Reading 1 line and saving in buffers */
+		/* Reading 1 line and saving to buffers */
 		printf("Buffer1 = %f\t", buffer1);
 		printf("Buffer2 = %f\t", buffer2);
 		printf("Buffer3 = %s\n", buffer3);
-		counter = 1;
 		
-		if(counter == 1)
+		if(infile_lab != NULL)
 		{
 			/* Buffer is duration of current sound */
 			buffer = buffer2 - buffer1;
@@ -154,34 +157,30 @@ int main(int argc, char *argv[])
 			/* If we have duration and samplerate we can calculate number of frames */
 			/* Then probably with function sf_count_t sf_readf_int we can read wanted frames */
 			
-			/* Calculating frames needed to be read with each sound. +1 used because of rounding with float */
-			int numFrames = buffer * sample_rate;
+			/* Calculating frames needed to be read with each sound */
+			short numFrames = buffer * sample_rate;
 			
 			/* Allocation of space for each frame */
-			int *spaceFrame = (int *) malloc(numFrames * sizeof(int));
+			short *spaceFrame = (short *) malloc(numFrames * sizeof(short));
 			if(spaceFrame == NULL)
 			{
 				printf("Allocation of space failed\n");
 			}
 			
-			/* I am reading frames. Could also read items because on 1 CHANNEL file frames=items */
-			int data[numFrames];
+			/* Currently reading frames. Could also read items because on 1 CHANNEL file frames == items */
+			short data[numFrames];
 			
 			/* Reading data */
-			sf_count_t frames_read = sf_readf_int(sf, data, numFrames);
-			/* Macro to check if my condition is true. If not program is terminated */
+			sf_count_t frames_read = sf_readf_short(sf, data, numFrames);
+			/* Macro to check if condition is true. If not program is terminated */
 			assert(frames_read == numFrames);
 		
-			
-			char string[50];
-
-			sprintf(string, "%d.raw", state);
+			/* Creating .raw files */
+			char rawName[50];
+			sprintf(rawName, "%d.raw", state);
 
 			/* Opening file in which we will write */
-			sprintf(string, "%d.wav", state);
-			
-			/* Opening file in which we will write. */
-			SNDFILE *sndFile = sf_open(string, SFM_WRITE, &info);
+			SNDFILE *sndFile = sf_open(rawName, SFM_WRITE, &info);
 			if(sndFile == NULL)
 			{
 				printf("Error opening file\n");
@@ -189,8 +188,10 @@ int main(int argc, char *argv[])
 				return -1;
 			}
 			
-			int writtenFrames = sf_writef_int(sndFile, spaceFrame, frames_read);
+			/*Writing frames into created .raw file */
+			short writtenFrames = sf_writef_short(sndFile, spaceFrame, frames_read);
 			assert(writtenFrames == numFrames);
+			
 			//sf_count_t frames_written = sf_writef_int(sndFile, spaceFrame, numFrames);
 			/*if(writtenFrames != numFrames)
 			{
